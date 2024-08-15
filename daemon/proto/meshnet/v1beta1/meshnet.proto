@@ -41,6 +41,24 @@ message BoolResponse {
   bool response = 1;
 }
 
+message BatchSkipRequest {
+  repeated SkipQuery skip = 1;
+}
+
+message BatchSkipResponse {
+  repeated bool responses = 1;
+}
+
+message ListSkippedRequest {
+  string pod = 1;
+  string peer = 2;
+  string kube_ns = 3;
+}
+
+message ListSkippedResponse {
+  repeated int64 link_ids = 1;
+}
+
 message RemotePod {
   string net_ns = 1;
   string intf_name = 2;
@@ -124,6 +142,8 @@ service Local {
   rpc SetAlive (Pod) returns (BoolResponse);
   rpc SkipReverse (SkipQuery) returns (BoolResponse);
   rpc Skip (SkipQuery) returns (BoolResponse);
+  rpc BatchSkip(BatchSkipRequest) returns (BatchSkipResponse);
+  rpc ListSkipped(ListSkippedRequest) returns (ListSkippedResponse);
   rpc IsSkipped (SkipQuery) returns (BoolResponse);
 
   rpc GRPCWireExists(WireDef) returns (WireCreateResponse); 

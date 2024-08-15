@@ -15,14 +15,13 @@ require (
 	github.com/safchain/ethtool v0.0.0-20190326074333-42ed695e3de8
 	github.com/sirupsen/logrus v1.8.1
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.30.0
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
 	sigs.k8s.io/controller-runtime v0.14.5
 )
-
-require google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0 // indirect
 
 require (
 	github.com/Microsoft/go-winio v0.4.11 // indirect
@@ -32,7 +31,6 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
-	github.com/go-errors/errors v1.4.2
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect

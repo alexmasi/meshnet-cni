@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/openconfig/gnmi/errlist"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/util/retry"
 
@@ -113,6 +114,18 @@ func (m *Meshnet) SetAlive(ctx context.Context, pod *mpb.Pod) (*mpb.BoolResponse
 	}
 
 	return &mpb.BoolResponse{Response: true}, nil
+}
+
+func (m *Meshnet) BatchSkip(ctx context.Context, req *mpb.BatchSkipRequest) (*mpb.BatchSkipResponse, error) {
+	mnetdLogger.Infof("Processing batch skip request: %+v", req)
+	var errs errlist.List
+	brs := []bool{}
+	for _, skip := range req.Skip {
+		br, err := m.Skip(ctx, skip)
+		errs.Add(err)
+		brs = append(brs, br.Response)
+	}
+	return &mpb.BatchSkipResponse{Responses: brs}, errs.Err()
 }
 
 // A point to point link between two pods is created only when both the pods are alive.
@@ -341,6 +354,40 @@ func (m *Meshnet) IsSkipped(ctx context.Context, skip *mpb.SkipQuery) (*mpb.Bool
 		}
 	}
 	return &mpb.BoolResponse{Response: false}, nil
+}
+
+func (m *Meshnet) ListSkipped(ctx context.Context, req *mpb.ListSkippedRequest) (*mpb.ListSkippedResponse, error) {
+	mnetdLogger.Infof("Listing skipped links for %s by peer %s", req.Pod, req.Peer)
+
+	result, err := m.getPod(ctx, req.Peer, req.KubeNs)
+	if err != nil {
+		mnetdLogger.Errorf("listSkipped: Failed to read pod %s from K8s", req.Pod)
+		return nil, err
+	}
+
+	skipped, found, err := unstructured.NestedSlice(result.Object, "status", "skipped")
+	if found && err != nil {
+		mnetdLogger.Errorf("listSkipped: error in retrieving skipped list from peer pod's status, object found: %t, err: %v", found, err)
+		return nil, err
+	}
+
+	links := []int64{}
+	for _, peerSkipped := range skipped {
+		elSkipped, ok := peerSkipped.(map[string]interface{})
+		if !ok {
+			mnetdLogger.Errorf("isSkipped: 'Skipped' not recognized")
+			continue
+		}
+		skipped := v1beta1.Skipped{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(elSkipped, &skipped); err != nil {
+			mnetdLogger.Errorf("isSkipped: unable to retrieve Skipped: %v", err)
+			continue
+		}
+		if req.Pod == skipped.PodName {
+			links = append(links, skipped.LinkId)
+		}
+	}
+	return &mpb.ListSkippedResponse{LinkIds: links}, nil
 }
 
 func (m *Meshnet) Update(ctx context.Context, pod *mpb.RemotePod) (*mpb.BoolResponse, error) {
